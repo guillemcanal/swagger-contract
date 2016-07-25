@@ -1,0 +1,62 @@
+#!/bin/bash
+
+PROJECT_NAME=api
+
+if ! [ -x "$(command -v docker)" ]; then
+    echo "docker must be installed"
+    exit 1
+fi
+
+if ! [ -x "$(command -v docker-compose)" ]; then
+    echo "docker-compose must be installed"
+    echo "be sure to get a version that support version 2"
+    exit 1
+fi
+
+docker_compose ()
+{
+    docker-compose -p $PROJECT_NAME $@
+}
+
+# Docker may be running in docker-machine
+# Only Support docker-machine and docker standard
+docker_ip ()
+{
+    local IP="127.0.0.1"
+    if [ -n ${DOCKER_MACHINE_NAME+x} ]; then
+        IP=`docker-machine ip $DOCKER_MACHINE_NAME`
+    fi
+
+    echo "http://"$IP
+}
+
+docker_info ()
+{
+    echo "$1 running on `docker_ip`:`docker_compose port $1 $2 | cut -d':' -f2`"
+}
+
+case $1 in
+    start)
+        docker_compose up -d
+        docker_info api 80
+    ;;
+    info)
+        docker_info api 80
+    ;;
+    stop)
+        docker_compose stop
+    ;;
+    rm)
+        docker_compose stop
+        docker-compose rm -f
+    ;;
+    *)
+        echo "Docker commands:
+
+start   start containers
+info    get the container ip address
+stop    stop containers
+rm      remove containers
+        "
+    ;;
+esac
